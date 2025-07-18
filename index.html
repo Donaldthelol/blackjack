@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <title>Blackjack Spel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #2e7d32;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    button {
+      font-size: 16px;
+      padding: 10px 20px;
+      margin: 10px;
+    }
+    #game {
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎲 Blackjack</h1>
+  <div id="game">
+    <p id="player-cards">Jouw kaarten: </p>
+    <p id="dealer-cards">Dealer kaarten: </p>
+    <p id="message"></p>
+    <button onclick="hit()">Kaart pakken</button>
+    <button onclick="stand()">Passen</button>
+    <button onclick="startGame()">Nieuw spel</button>
+  </div>
+
+  <script>
+    let deck = [];
+    let playerHand = [];
+    let dealerHand = [];
+
+    function startGame() {
+      deck = createDeck();
+      shuffleDeck(deck);
+      playerHand = [drawCard(), drawCard()];
+      dealerHand = [drawCard(), drawCard()];
+      showHands(false);
+      document.getElementById("message").textContent = "";
+    }
+
+    function createDeck() {
+      const suits = ['♠', '♥', '♦', '♣'];
+      const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+      const newDeck = [];
+      for (let suit of suits) {
+        for (let value of values) {
+          newDeck.push({ suit, value });
+        }
+      }
+      return newDeck;
+    }
+
+    function shuffleDeck(deck) {
+      for (let i = deck.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+    }
+
+    function drawCard() {
+      return deck.pop();
+    }
+
+    function getValue(hand) {
+      let value = 0;
+      let aces = 0;
+      for (let card of hand) {
+        if (['J', 'Q', 'K'].includes(card.value)) {
+          value += 10;
+        } else if (card.value === 'A') {
+          value += 11;
+          aces += 1;
+        } else {
+          value += parseInt(card.value);
+        }
+      }
+      while (value > 21 && aces > 0) {
+        value -= 10;
+        aces -= 1;
+      }
+      return value;
+    }
+
+    function showHands(revealDealer) {
+      document.getElementById("player-cards").textContent = `Jouw kaarten: ${formatHand(playerHand)} (Totaal: ${getValue(playerHand)})`;
+      if (revealDealer) {
+        document.getElementById("dealer-cards").textContent = `Dealer kaarten: ${formatHand(dealerHand)} (Totaal: ${getValue(dealerHand)})`;
+      } else {
+        document.getElementById("dealer-cards").textContent = `Dealer kaarten: [${dealerHand[0].value}${dealerHand[0].suit}], [?]`;
+      }
+    }
+
+    function formatHand(hand) {
+      return hand.map(card => card.value + card.suit).join(', ');
+    }
+
+    function hit() {
+      playerHand.push(drawCard());
+      showHands(false);
+      if (getValue(playerHand) > 21) {
+        document.getElementById("message").textContent = "Je hebt verloren! 😢";
+        showHands(true);
+      }
+    }
+
+    function stand() {
+      while (getValue(dealerHand) < 17) {
+        dealerHand.push(drawCard());
+      }
+      showHands(true);
+      const playerValue = getValue(playerHand);
+      const dealerValue = getValue(dealerHand);
+      let message = "";
+      if (dealerValue > 21 || playerValue > dealerValue) {
+        message = "Je wint! 🎉";
+      } else if (playerValue < dealerValue) {
+        message = "Je hebt verloren! 😢";
+      } else {
+        message = "Gelijkspel! 🤝";
+      }
+      document.getElementById("message").textContent = message;
+    }
+
+    startGame(); // Start meteen als je pagina laadt
+  </script>
+</body>
+</html>
