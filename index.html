@@ -2,63 +2,97 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8">
-  <title>Blackjack Spel</title>
+  <title>Blackjack Casino</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background-color: #2e7d32;
+      background: url('https://i.imgur.com/uA0EbnH.jpg') no-repeat center center fixed;
+      background-size: cover;
+      font-family: sans-serif;
       color: white;
       text-align: center;
       padding: 20px;
     }
-    button {
-      font-size: 16px;
-      padding: 10px 20px;
+
+    h1 {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+
+    #dealer {
+      margin: 20px auto;
+      width: 150px;
+    }
+
+    #cards-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 30px;
+    }
+
+    .hand {
+      display: flex;
+      justify-content: center;
       margin: 10px;
     }
-    #game {
-      margin-top: 30px;
+
+    .hand img {
+      width: 80px;
+      margin: 5px;
+    }
+
+    button {
+      font-size: 18px;
+      padding: 10px 20px;
+      margin: 15px;
+      cursor: pointer;
+    }
+
+    #message {
+      font-size: 24px;
+      margin-top: 15px;
     }
   </style>
 </head>
 <body>
-  <h1>🎲 Blackjack</h1>
-  <div id="game">
-    <p id="player-cards">Jouw kaarten: </p>
-    <p id="dealer-cards">Dealer kaarten: </p>
-    <p id="message"></p>
-    <button onclick="hit()">Kaart pakken</button>
-    <button onclick="stand()">Passen</button>
-    <button onclick="startGame()">Nieuw spel</button>
+  <h1>🎰 Blackjack</h1>
+  <img id="dealer" src="dealer.png" alt="Dealer poppetje">
+  
+  <div id="cards-area">
+    <div>
+      <strong>Dealer:</strong>
+      <div class="hand" id="dealer-hand"></div>
+    </div>
+    <div>
+      <strong>Jij:</strong>
+      <div class="hand" id="player-hand"></div>
+    </div>
   </div>
+
+  <p id="message"></p>
+  <button onclick="hit()">Kaart pakken</button>
+  <button onclick="stand()">Passen</button>
+  <button onclick="startGame()">Nieuw spel</button>
 
   <script>
     let deck = [];
     let playerHand = [];
     let dealerHand = [];
-
-    function startGame() {
-      deck = createDeck();
-      shuffleDeck(deck);
-      playerHand = [drawCard(), drawCard()];
-      dealerHand = [drawCard(), drawCard()];
-      showHands(false);
-      document.getElementById("message").textContent = "";
-    }
+    let gameOver = false;
 
     function createDeck() {
-      const suits = ['♠', '♥', '♦', '♣'];
-      const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+      const suits = ['hearts', 'spades', 'diamonds', 'clubs'];
+      const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace'];
       const newDeck = [];
       for (let suit of suits) {
         for (let value of values) {
-          newDeck.push({ suit, value });
+          newDeck.push({ value, suit });
         }
       }
       return newDeck;
     }
 
-    function shuffleDeck(deck) {
+    function shuffle(deck) {
       for (let i = deck.length - 1; i > 0; i--) {
         let j = Math.floor(Math.random() * (i + 1));
         [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -69,67 +103,99 @@
       return deck.pop();
     }
 
+    function getCardImage(card) {
+      return `png/${card.value}_of_${card.suit}.png`;
+    }
+
     function getValue(hand) {
-      let value = 0;
+      let total = 0;
       let aces = 0;
       for (let card of hand) {
-        if (['J', 'Q', 'K'].includes(card.value)) {
-          value += 10;
-        } else if (card.value === 'A') {
-          value += 11;
+        if (['jack', 'queen', 'king'].includes(card.value)) total += 10;
+        else if (card.value === 'ace') {
+          total += 11;
           aces += 1;
         } else {
-          value += parseInt(card.value);
+          total += parseInt(card.value);
         }
       }
-      while (value > 21 && aces > 0) {
-        value -= 10;
+      while (total > 21 && aces > 0) {
+        total -= 10;
         aces -= 1;
       }
-      return value;
+      return total;
     }
 
     function showHands(revealDealer) {
-      document.getElementById("player-cards").textContent = `Jouw kaarten: ${formatHand(playerHand)} (Totaal: ${getValue(playerHand)})`;
-      if (revealDealer) {
-        document.getElementById("dealer-cards").textContent = `Dealer kaarten: ${formatHand(dealerHand)} (Totaal: ${getValue(dealerHand)})`;
-      } else {
-        document.getElementById("dealer-cards").textContent = `Dealer kaarten: [${dealerHand[0].value}${dealerHand[0].suit}], [?]`;
+      const playerDiv = document.getElementById("player-hand");
+      const dealerDiv = document.getElementById("dealer-hand");
+      playerDiv.innerHTML = "";
+      dealerDiv.innerHTML = "";
+
+      for (let card of playerHand) {
+        let img = document.createElement("img");
+        img.src = getCardImage(card);
+        playerDiv.appendChild(img);
+      }
+
+      for (let i = 0; i < dealerHand.length; i++) {
+        let img = document.createElement("img");
+        if (i === 0 || revealDealer) {
+          img.src = getCardImage(dealerHand[i]);
+        } else {
+          img.src = "png/back.png";
+        }
+        dealerDiv.appendChild(img);
       }
     }
 
-    function formatHand(hand) {
-      return hand.map(card => card.value + card.suit).join(', ');
+    function startGame() {
+      deck = createDeck();
+      shuffle(deck);
+      playerHand = [drawCard(), drawCard()];
+      dealerHand = [drawCard(), drawCard()];
+      gameOver = false;
+      document.getElementById("message").textContent = "";
+      showHands(false);
     }
 
     function hit() {
+      if (gameOver) return;
       playerHand.push(drawCard());
       showHands(false);
       if (getValue(playerHand) > 21) {
-        document.getElementById("message").textContent = "Je hebt verloren! 😢";
-        showHands(true);
+        endGame();
       }
     }
 
     function stand() {
+      if (gameOver) return;
       while (getValue(dealerHand) < 17) {
         dealerHand.push(drawCard());
       }
+      endGame();
+    }
+
+    function endGame() {
+      gameOver = true;
       showHands(true);
-      const playerValue = getValue(playerHand);
-      const dealerValue = getValue(dealerHand);
+      const playerVal = getValue(playerHand);
+      const dealerVal = getValue(dealerHand);
       let message = "";
-      if (dealerValue > 21 || playerValue > dealerValue) {
+
+      if (playerVal > 21) {
+        message = "Je hebt verloren! 😵";
+      } else if (dealerVal > 21 || playerVal > dealerVal) {
         message = "Je wint! 🎉";
-      } else if (playerValue < dealerValue) {
-        message = "Je hebt verloren! 😢";
+      } else if (playerVal < dealerVal) {
+        message = "Dealer wint! 😢";
       } else {
         message = "Gelijkspel! 🤝";
       }
       document.getElementById("message").textContent = message;
     }
 
-    startGame(); // Start meteen als je pagina laadt
+    startGame();
   </script>
 </body>
 </html>
