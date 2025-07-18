@@ -104,7 +104,7 @@
     }
 
     function getCardImage(card) {
-      return `png/${card.value}_of_${card.suit}.png`;
+      return `cards/${card.value}_of_${card.suit}.webp`;
     }
 
     function getValue(hand) {
@@ -143,7 +143,7 @@
         if (i === 0 || revealDealer) {
           img.src = getCardImage(dealerHand[i]);
         } else {
-          img.src = "png/back.png";
+          img.src = "cards/back.webp";
         }
         dealerDiv.appendChild(img);
       }
